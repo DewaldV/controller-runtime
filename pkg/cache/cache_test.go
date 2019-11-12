@@ -33,6 +33,7 @@ import (
 	kcache "k8s.io/client-go/tools/cache"
 
 	"sigs.k8s.io/controller-runtime/pkg/cache"
+	"sigs.k8s.io/controller-runtime/pkg/cache/informertest"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
@@ -135,6 +136,31 @@ func CacheTest(createCacheFunc func(config *rest.Config, opts cache.Options) (ca
 
 		Describe("as a Reader", func() {
 			Context("with structured objects", func() {
+				Context("that have lists of pointers", func() {
+					BeforeEach(func() {
+
+					})
+
+					It("should be able to list objects that haven't been watched previously", func() {
+						By("listing all services in the cluster using a crd service list")
+
+						listObj := &informertest.ServiceList{}
+						Expect(informerCache.List(context.Background(), listObj)).To(Succeed())
+
+						By("verifying that the returned list contains the Kubernetes service")
+						// NB: kubernetes default service is automatically created in testenv.
+						Expect(listObj.Items).NotTo(BeEmpty())
+						hasKubeService := false
+						for _, svc := range listObj.Items {
+							if svc.Namespace == "default" && svc.Name == "kubernetes" {
+								hasKubeService = true
+								break
+							}
+						}
+						Expect(hasKubeService).To(BeTrue())
+					})
+
+				})
 
 				It("should be able to list objects that haven't been watched previously", func() {
 					By("listing all services in the cluster")
